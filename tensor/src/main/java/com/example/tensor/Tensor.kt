@@ -1,30 +1,26 @@
 package com.example.tensor
 
-import android.app.Application
-import android.content.Context
 import android.graphics.Bitmap
-import android.widget.Toast
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
-import java.io.FileInputStream
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import kotlin.jvm.Throws
 
-class Tensor : Application() {
+class Tensor {
 
-    private val interpreter by lazy {
-        Interpreter(
-            loadModelFile(),
-            Interpreter.Options().apply {
-                setNumThreads(4)
-                addDelegate(GpuDelegate())
-                setAllowBufferHandleOutput(false)
-            }
-        )
+    private lateinit var interpreter: Interpreter
+
+    fun setInterpreter(mappedByteBuffer: MappedByteBuffer) {
+        interpreter =
+            Interpreter(
+                mappedByteBuffer,
+                Interpreter.Options().apply {
+                    setNumThreads(4)
+                    addDelegate(GpuDelegate())
+                    setAllowBufferHandleOutput(false)
+                }
+            )
     }
 
     fun segmentImage(bitmap: Bitmap): ByteBuffer {
@@ -49,19 +45,6 @@ class Tensor : Application() {
             segmentationMasks
         )
         return segmentationMasks
-    }
-
-    @Throws(IOException::class)
-    private fun loadModelFile(): MappedByteBuffer {
-        val fileDescriptor =
-            App.instance.context().assets.openFd(Model_IMAGE_SEGMENTATION)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel = inputStream.channel
-        val startOffset = fileDescriptor.startOffset
-        val declaredLength = fileDescriptor.declaredLength
-        val retFile = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
-        fileDescriptor.close()
-        return retFile
     }
 
     private fun bitmapToByteBuffer(
@@ -93,17 +76,11 @@ class Tensor : Application() {
         return inputImage
     }
 
-
     companion object {
-        private const val Model_IMAGE_SEGMENTATION = "deeplabv3_257_mv_gpu.tflite"
 
         const val NUM_CLASSES = 21
         const val IMAGE_SIZE = 257
         const val TO_FLOAT = 4
     }
 
-
-    fun test(context: Context) {
-        Toast.makeText(context, "연결됨..", Toast.LENGTH_SHORT).show()
-    }
 }
