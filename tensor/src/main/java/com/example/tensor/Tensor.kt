@@ -66,7 +66,7 @@ class Tensor constructor(private val context: Context) {
 
         segmentationMasks.order(ByteOrder.nativeOrder())
 
-        interpreter.run(
+        interpreter1.run(
             bitmapToByteBuffer(
                 resizeBitmap,
                 IMAGE_SIZE,
