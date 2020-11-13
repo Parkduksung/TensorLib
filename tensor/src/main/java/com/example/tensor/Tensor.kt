@@ -1,15 +1,21 @@
 package com.example.tensor
 
+import android.content.Context
 import android.graphics.Bitmap
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
+import java.io.FileInputStream
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
-class Tensor {
+class Tensor constructor(private val context: Context) {
 
     private lateinit var interpreter: Interpreter
+
+//    private var context: Context? = null
 
     fun setInterpreter(mappedByteBuffer: MappedByteBuffer) {
         interpreter =
@@ -21,6 +27,30 @@ class Tensor {
                     setAllowBufferHandleOutput(false)
                 }
             )
+    }
+
+    private val interpreter1 by lazy {
+        Interpreter(
+            loadModelFile(),
+            Interpreter.Options().apply {
+                setNumThreads(4)
+                addDelegate(GpuDelegate())
+                setAllowBufferHandleOutput(false)
+            }
+        )
+    }
+
+    @Throws(IOException::class)
+    private fun loadModelFile(): MappedByteBuffer {
+        val fileDescriptor =
+            context.assets.openFd(Model_IMAGE_SEGMENTATION)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        val retFile = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        fileDescriptor.close()
+        return retFile
     }
 
     fun segmentImage(bitmap: Bitmap): ByteBuffer {
@@ -46,6 +76,7 @@ class Tensor {
         )
         return segmentationMasks
     }
+
 
     private fun bitmapToByteBuffer(
         bitmapIn: Bitmap,
@@ -78,9 +109,11 @@ class Tensor {
 
     companion object {
 
+        private const val Model_IMAGE_SEGMENTATION = "deeplabv3_257_mv_gpu.tflite"
         const val NUM_CLASSES = 21
         const val IMAGE_SIZE = 257
         const val TO_FLOAT = 4
+        const val NUM_PERSON = 15
     }
 
 }
