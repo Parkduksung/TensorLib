@@ -35,6 +35,8 @@ class TensorLib(private val context: Context) {
 
     fun segmentImage(bitmap: Bitmap): ByteBuffer {
 
+        segmentationMasks.rewind()
+
         val resizeBitmap = Bitmap.createScaledBitmap(
             bitmap,
             IMAGE_SIZE,
@@ -49,6 +51,7 @@ class TensorLib(private val context: Context) {
             ),
             segmentationMasks
         )
+
         return segmentationMasks
     }
 
